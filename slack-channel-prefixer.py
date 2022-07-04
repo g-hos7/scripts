@@ -1,6 +1,6 @@
 # Tim Barnes
-# v1.2
-# 2022-07-01
+# v1.4
+# 2022-07-04
 #
 # Get a list of public slack channels in a Workspace.
 # Choose to add a prefix to some or all channels.
@@ -10,6 +10,7 @@
 
 import logging
 import re
+import time
 from webbrowser import get
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -17,6 +18,7 @@ from slack_sdk.errors import SlackApiError
 logger = logging.getLogger(__name__)
 token_prompt = "Enter your user auth token: "
 prefix_prompt = "Enter the desired channel prefix (a hyphen will be added automatically): "
+channel_list_limit = 1000
 
 def get_user_input(prompt):
     return input(prompt)
@@ -40,7 +42,7 @@ def create_client(token):
 
 def get_channel_list(client):
     try:
-        result = client.conversations_list()
+        result = client.conversations_list(channel_list_limit)
         return result["channels"]
 
     except SlackApiError as e:
@@ -50,6 +52,7 @@ def get_channel_list(client):
 
 def prefix_channels(client, channel_list):
     channel_prefix = get_user_input(prefix_prompt)
+    rate_counter = 0
 
     while(True):
         choice = get_user_input("Enter a positive integer to prefix some channels, a to prefix all, or x to go back: ")
@@ -63,11 +66,18 @@ def prefix_channels(client, channel_list):
                     continue
 
                 else:
+                    if(rate_counter == 20):
+                        print("Pausing for 65 seconds due to rate limiting")
+                        time.sleep(65)
+                        rate_counter = 0
+                        print("Resuming execution")
+
                     new_name = channel_prefix + "-" + channel_name
                     print(f"Adding {channel_prefix} to {channel_name}")
                     try:
                         client.conversations_rename(channel=channel_id, name=new_name)
                         print(f"{channel_name} prefixed successfully\n")
+                        rate_counter += 1
     
                     except SlackApiError as e:
                         logger.error("Error prefixing {channel_name}: {}".format(e))
