@@ -1,7 +1,9 @@
 # Tim Barnes
 # v0.0.6
 # 2021-04-06
+#
 # Query ifconfig.co for public IP information
+
 from requests import get
 
 
