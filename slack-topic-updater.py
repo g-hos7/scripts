@@ -1,6 +1,6 @@
 # Tim Barnes
-# v1.0
-# 2022-06-30
+# v1.0.1
+# 2022-07-06
 #
 # Get a list of public slack channels in a Workspace
 # and update the topic and description of each.
@@ -9,14 +9,17 @@
 # the correct auth token needed for this script to connect to the api
 
 import logging
+import os
+from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 logger = logging.getLogger(__name__)
 control_prompt = "Do you want to edit this channel, skip it, or exit? (e/s/x): "
-token_prompt = "Enter your user auth token: "
 topic_prompt = "What do you want to add to the topic? "
 purpose_prompt = "What do you want to add to the description? "
+channel_list_limit = 1000
+
 
 def get_user_input(prompt):
     return input(prompt)
@@ -28,13 +31,12 @@ def create_client(token):
 
 def get_channel_list(client):
     try:
-        result = client.conversations_list()
+        result = client.conversations_list(limit=channel_list_limit)
         return result["channels"]
 
     except SlackApiError as e:
         logger.error("Error fetching list of channels: {}".format(e))
         exit()
-
 
 
 def update_topic_purpose(client, channel_list):
@@ -76,8 +78,9 @@ def update_topic_purpose(client, channel_list):
 
 
 def main():
-    user_auth_token = get_user_input(token_prompt)
-    client = create_client(user_auth_token)
+    load_dotenv()
+    user_token = os.environ.get("user_token")
+    client = create_client(user_token)
     channel_list = get_channel_list(client)
     update_topic_purpose(client, channel_list)
 

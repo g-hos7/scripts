@@ -1,6 +1,6 @@
 # Tim Barnes
-# v1.4
-# 2022-07-04
+# v1.0.4
+# 2022-07-06
 #
 # Get a list of public slack channels in a Workspace.
 # Choose to add a prefix to some or all channels.
@@ -11,12 +11,12 @@
 import logging
 import re
 import time
-from webbrowser import get
+import os
+from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 logger = logging.getLogger(__name__)
-token_prompt = "Enter your user auth token: "
 prefix_prompt = "Enter the desired channel prefix (a hyphen will be added automatically): "
 channel_list_limit = 1000
 
@@ -42,7 +42,7 @@ def create_client(token):
 
 def get_channel_list(client):
     try:
-        result = client.conversations_list(channel_list_limit)
+        result = client.conversations_list(limit=channel_list_limit)
         return result["channels"]
 
     except SlackApiError as e:
@@ -115,9 +115,11 @@ def prefix_channels(client, channel_list):
         else:
             print("Invalid input, enter a positive integer, a, or x")
 
+
 def main():
-    user_auth_token = get_user_input(token_prompt)
-    client = create_client(user_auth_token)
+    load_dotenv()
+    user_token = os.environ.get("user_token")
+    client = create_client(user_token)
     channel_list = get_channel_list(client)
 
     while(True):
@@ -130,5 +132,6 @@ def main():
             exit()
         else:
             print("Invalid selection, choose l, p, or x")
+
 
 main()
