@@ -1,36 +1,26 @@
-# Author: Tim Barnes
-# Version: 0.0.6
+# Tim Barnes
+# v0.0.6
 # 2021-04-06
 # Query ifconfig.co for public IP information
 from requests import get
 
-def main():
-    url = "https://ifconfig.co/json"
 
-    print("\nQuerying " + url + " for your info\n")
-    response = getData(url)
-
-    if("404" in response.text):
-        printConnectErr(url)
-        exit()
-
-    data = processData(response)
-    keys, values = parseData(data)[0], parseData(data)[1]
-    printResults(keys, values)
-
-def getData(url):
+def get_data(url):
     return get(url)
 
-def processData(data):
+
+def process_data(data):
     return data.json()
 
-def printConnectErr(url):
+
+def print_connect_error(url):
     print(
         "Unable to reach " + url +
         "\n\nCheck your network connection and retry"
     )
 
-def parseData(data):
+
+def parse_data(data):
     keys, values = [], []
 
     for key in data.keys():
@@ -41,7 +31,8 @@ def parseData(data):
         
     return keys, values
 
-def printResults(keys, values):
+
+def print_results(keys, values):
     fields = {
         "ip": "IP Address", "country": "Country", "region_name": "Region",
         "zip_code": "Zip Code", "city": "City", "time_zone": "Time Zone"
@@ -55,5 +46,21 @@ def printResults(keys, values):
             )
         else:
             continue
+
+
+def main():
+    url = "https://ifconfig.co/json"
+
+    print("\nQuerying " + url + " for your info\n")
+    response = get_data(url)
+
+    if("404" in response.text):
+        print_connect_error(url)
+        exit()
+
+    data = process_data(response)
+    keys, values = parse_data(data)[0], parse_data(data)[1]
+    print_results(keys, values)
+
 
 main()
