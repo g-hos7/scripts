@@ -1,6 +1,6 @@
 /*
 Tim Barnes
-v2.0.0
+v2.1.0
 2022-07-21
 
 A Google Apps Script designed to manage my gmail inbox. The script checks the
@@ -10,33 +10,37 @@ predefined business hours, the message is archived, marked as read, and an
 missed during off hours.
 */
 
+const clockInTime = 700;
+const clockOutTime = 1600;
+const today = new Date();
+const timezone = 'America/Chicago';
+const locale = 'en-US';
+const daysOff = ['Saturday', 'Sunday'];
+const label = GmailApp.getUserLabelByName("After Hours")
+
 function main() 
 {
-  //If during business hours, exit early
-  if (WorkHours() == true)
+  if (isItBusinessHours())
   {
     return;
   } else {
-    const startTime = 700;
-    const endTime   = 1600;
-    var label = GmailApp.getUserLabelByName("After Hours")
-    var Threads = GmailApp.getInboxThreads();
+    let threads = GmailApp.getInboxThreads();
 
-    for (var i = 0; i < Threads.length; i++) 
+    for (let i = 0; i < threads.length; i++) 
     {
-      var Msgs = Threads[i].getMessages();
+      let messages = threads[i].getMessages();
 
-      for (var j=0;j < Msgs.length ;j++)
+      for (let j = 0; j < messages.length; j++)
       {
-        var MsgTimeStamp = Msgs[j].getDate();
-        var MsgTime = GetMsgTime(MsgTimeStamp);
-        var MsgDay = GetMsgDay(MsgTimeStamp);
+        let messageTimestamp = messages[j].getDate();
+        let timeDelivered = getTimeDelivered(messageTimestamp);
+        let dayDelivered = getDayDelivered(messageTimestamp);
 
-        if (MsgDay == "Saturday" || MsgDay == "Sunday")
+        if (daysOff.includes(dayDelivered))
         {
-          MoveMsg(Threads[i], label);
-        } else if (MsgTime <= startTime || MsgTime >= endTime) {
-          MoveMsg(Threads[i], label);
+          handleMessage(threads[i]);
+        } else if (timeDelivered <= clockInTime || timeDelivered >= clockOutTime) {
+          handleMessage(threads[i]);
         }
       }
     }
@@ -44,26 +48,24 @@ function main()
   }
 }
 
-function WorkHours()
+function isItBusinessHours()
 {
-  var date = new Date();
-  var weekday = date.toLocaleString("en-US", {
-    timeZone: "America/Chicago",
+  let weekday = today.toLocaleString(locale, {
+    timeZone: timezone,
     weekday: 'long'
-  })
-  const start = 700;
-  const end = 1600;
+  });
+  
   const options = 
   {
-    timeZone: 'America/Chicago',
+    timeZone: timezone,
     hour12: false,
     hour: '2-digit',
     minute: '2-digit'
   };
-  var time = date.toLocaleTimeString('en-US', options);
+  let time = today.toLocaleTimeString(locale, options);
   time = Number(time.replace(':', ''));
 
-  if ((weekday!="Saturday" && weekday!="Sunday") && (time>=start && time<=end))
+  if (!daysOff.includes(weekday) && (time>=clockInTime && time<=clockOutTime))
   {
     return true;
   } else {
@@ -71,27 +73,27 @@ function WorkHours()
   }
 }
 
-function GetMsgTime(timestamp)
+function getTimeDelivered(timestamp)
 {
   const options = {
-    timeZone: 'America/Chicago',
+    timeZone: timezone,
     hour12: false,
     hour: '2-digit',
     minute: '2-digit'
   };
-  return Number(timestamp.toLocaleTimeString('en-US', options));
+  return Number(timestamp.toLocaleTimeString(locale, options));
 }
 
-function GetMsgDay(timestamp)
+function getDayDelivered(timestamp)
 {
   const options = {
-    timeZone: "America/Chicago",
+    timeZone: timezone,
     weekday: 'long'
   };
-  return timestamp.toLocaleString("en-US", options);
+  return timestamp.toLocaleString(locale, options);
 }
 
-function MoveMsg(thread, label)
+function handleMessage(thread)
 {
   thread.moveToArchive();
   thread.markRead();
