@@ -1,12 +1,12 @@
 /*
 Tim Barnes
-v1.1.0
+v2.0.0
 2022-07-21
 
 A Google Apps Script designed to manage my gmail inbox. The script checks the
-time received of all messages in my inbox. If the time falls outside of my predefined
-business hours, the message is archived and marked as read to suppress notifications
-and an "After Hours" label is applied so that I can see what I missed every weekday
+timestamp of each message in my inbox. If the timestamp falls outside of my
+predefined business hours, the message is archived, marked as read, and an
+"After Hours" label is applied so that I can see what I missed every weekday
 morning.
 */
 
@@ -16,43 +16,31 @@ function MoveMsgBasedOnTime()
   if (WorkHours() == true)
   {
     return;
-  }
+  } else {
+    const startTime = 700;
+    const endTime   = 1600;
+    var label = GmailApp.getUserLabelByName("After Hours")
+    var Threads = GmailApp.getInboxThreads();
 
-  var label = GmailApp.getUserLabelByName("After Hours")
-  var Threads = GmailApp.getInboxThreads();
-
-  for (var i = 0; i < Threads.length; i++) 
-  {
-    var Msgs = Threads[i].getMessages();
-    for (var j=0;j < Msgs.length ;j++)
+    for (var i = 0; i < Threads.length; i++) 
     {
-      var MsgTime = Msgs[j].getDate();
-      //Sunday = 0, Saturday = 6
-      if (MsgTime.getDay() == 0 || MsgTime.getDay() == 6)
+      var Msgs = Threads[i].getMessages();
+
+      for (var j=0;j < Msgs.length ;j++)
       {
-        //Silence notifications and apply label
-        Threads[i].moveToArchive();
-        Threads[i].markRead();
-        Threads[i].addLabel(label);
-      }
+        var MsgTimeStamp = Msgs[j].getDate();
+        var MsgTime = GetMsgTime(MsgTimeStamp);
+        var MsgDay = GetMsgDay(MsgTimeStamp);
 
-      if (MsgTime.getDay() == 1 || MsgTime.getDay() == 2 || MsgTime.getDay() == 3 || MsgTime.getDay() == 4 || MsgTime.getDay() == 5 )
-      {
-        var startTime = '7:00 AM';
-        var endTime   = '4:00 PM';
-        var startDate = dateObj(startTime,MsgTime);
-        var endDate   = dateObj(endTime,MsgTime);
-
-        var actionToTake = MsgTime < endDate && MsgTime > startDate ? 'continue' : 'silence';
-
-        if (actionToTake == 'silence')
+        if (MsgDay == "Saturday" || MsgDay == "Sunday")
         {
-            Threads[i].moveToArchive();
-            Threads[i].markRead();
-            Threads[i].addLabel(label);
+          MoveMsg(Threads[i], label);
+        } else if (MsgTime <= startTime || MsgTime >= endTime) {
+          MoveMsg(Threads[i], label);
         }
       }
     }
+    return;
   }
 }
 
@@ -63,8 +51,8 @@ function WorkHours()
     timeZone: "America/Chicago",
     weekday: 'long'
   })
-  var start = 700;
-  var end = 1600;
+  const start = 700;
+  const end = 1600;
   const options = 
   {
     timeZone: 'America/Chicago',
@@ -72,7 +60,7 @@ function WorkHours()
     hour: '2-digit',
     minute: '2-digit'
   };
-  time = date.toLocaleTimeString('en-US', options);
+  var time = date.toLocaleTimeString('en-US', options);
   time = Number(time.replace(':', ''));
 
   if ((weekday!="Saturday" && weekday!="Sunday") && (time >= start && time <= end))
@@ -83,13 +71,30 @@ function WorkHours()
   }
 }
 
-
-function dateObj(d,MsgTime) 
+function GetMsgTime(timestamp)
 {
-  var parts = d.split(/:|\s/),
-      date  = new Date(MsgTime);
-  if (parts.pop().toLowerCase() == 'pm') parts[0] = (+parts[0]) + 12;
-  date.setHours(+parts.shift());
-  date.setMinutes(+parts.shift());
-  return date;
+  const options = {
+    timeZone: 'America/Chicago',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  return Number(timestamp.toLocaleTimeString('en-US', options));
+}
+
+function GetMsgDay(timestamp)
+{
+  const options = {
+    timeZone: "America/Chicago",
+    weekday: 'long'
+  };
+  return timestamp.toLocaleString("en-US", options);
+}
+
+function MoveMsg(thread, label)
+{
+  thread.moveToArchive();
+  thread.markRead();
+  thread.addLabel(label);
+  return;
 }
