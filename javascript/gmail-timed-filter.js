@@ -10,7 +10,7 @@ predefined business hours, the message is archived, marked as read, and an
 morning.
 */
 
-function MoveMsgBasedOnTime() 
+function main() 
 {
   //If during business hours, exit early
   if (WorkHours() == true)
@@ -63,7 +63,7 @@ function WorkHours()
   var time = date.toLocaleTimeString('en-US', options);
   time = Number(time.replace(':', ''));
 
-  if ((weekday!="Saturday" && weekday!="Sunday") && (time >= start && time <= end))
+  if ((weekday!="Saturday" && weekday!="Sunday") && (time>=start && time<=end))
   {
     return true;
   } else {
