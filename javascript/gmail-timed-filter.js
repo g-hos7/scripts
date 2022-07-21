@@ -1,7 +1,7 @@
 /*
 Tim Barnes
-v1.0
-2022-07-20
+v1.1.0
+2022-07-21
 
 A Google Apps Script designed to manage my gmail inbox. The script checks the
 time received of all messages in my inbox. If the time falls outside of my predefined
@@ -12,6 +12,12 @@ morning.
 
 function MoveMsgBasedOnTime() 
 {
+  //If during business hours, exit early
+  if (WorkHours() == true)
+  {
+    return;
+  }
+
   var label = GmailApp.getUserLabelByName("After Hours")
   var Threads = GmailApp.getInboxThreads();
 
@@ -39,22 +45,44 @@ function MoveMsgBasedOnTime()
 
         var actionToTake = MsgTime < endDate && MsgTime > startDate ? 'continue' : 'silence';
 
-        if (actionToTake == 'continue')
-        {
-            console.log('Message received during business hours');
-        }
-
         if (actionToTake == 'silence')
         {
             Threads[i].moveToArchive();
             Threads[i].markRead();
             Threads[i].addLabel(label);
-            console.log('Message received outside business hours');
         }
       }
     }
   }
 }
+
+function WorkHours()
+{
+  var date = new Date();
+  var weekday = date.toLocaleString("en-US", {
+    timeZone: "America/Chicago",
+    weekday: 'long'
+  })
+  var start = 700;
+  var end = 1600;
+  const options = 
+  {
+    timeZone: 'America/Chicago',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  time = date.toLocaleTimeString('en-US', options);
+  time = Number(time.replace(':', ''));
+
+  if ((weekday!="Saturday" && weekday!="Sunday") && (time >= start && time <= end))
+  {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 function dateObj(d,MsgTime) 
 {
