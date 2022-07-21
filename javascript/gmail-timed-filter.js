@@ -6,8 +6,8 @@ v2.0.0
 A Google Apps Script designed to manage my gmail inbox. The script checks the
 timestamp of each message in my inbox. If the timestamp falls outside of my
 predefined business hours, the message is archived, marked as read, and an
-"After Hours" label is applied so that I can see what I missed every weekday
-morning.
+"After Hours" label is applied to supress notifications and collect everything
+missed during off hours.
 */
 
 function main() 
